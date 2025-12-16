@@ -15,32 +15,21 @@ O Evolution API foi modificado com sucesso para ser compatível com o Render.com
 2. **Desenvolvimento Local**: Continua usando `SERVER_PORT` ou porta `8080`
 3. **Fallback**: Se nenhuma variável estiver definida, usa porta `8080`
 
-## 📋 Instruções para Upload no GitHub
+## 📋 Instruções para Deploy no Render.com
 
-### Passo 1: Criar Repositório
-1. Vá para [GitHub.com](https://github.com)
-2. Clique em "New repository"
-3. Nome: `evolution-api-render`
-4. Descrição: `Evolution API modificado para deploy no Render.com com configuração de porta dinâmica`
-5. Marque como **Private**
-6. NÃO inicialize com README (já temos código)
-7. Clique em "Create repository"
+### Passo 1: Criar Banco de Dados PostgreSQL no Render
+**IMPORTANTE**: Você deve criar um banco PostgreSQL ANTES do Web Service.
 
-### Passo 2: Conectar e Fazer Push
-Execute estes comandos no terminal na pasta do projeto:
+1. No Render Dashboard, clique em "New" → "PostgreSQL"
+2. Configure:
+   - **Name**: evolution-api-db
+   - **Database**: evolution_db
+   - **User**: evolution (ou outro nome)
+   - **Password**: [defina uma senha segura]
+3. Clique em "Create Database"
+4. **ANOTE A CONNECTION STRING** (ex: `postgresql://user:pass@host:port/db`)
 
-```bash
-# Navegar para a pasta do projeto
-cd /home/samueldjesus/evolution-api
-
-# Adicionar o remote do seu repositório (substitua SEU_USUARIO)
-git remote add origin https://github.com/SEU_USUARIO/evolution-api-render.git
-
-# Fazer push para o GitHub
-git push -u origin main
-```
-
-### Passo 3: Deploy no Render.com
+### Passo 2: Deploy no Render.com
 1. Vá para [Render.com](https://render.com)
 2. Conecte sua conta do GitHub
 3. Clique em "New" → "Web Service"
@@ -52,34 +41,114 @@ git push -u origin main
    - **Start Command**: `npm start`
 6. Clique em "Create Web Service"
 
-## 🛠️ Variáveis de Ambiente no Render
+### Passo 3: Configurar Variáveis de Ambiente
 
-No Render, você pode definir as seguintes variáveis de ambiente:
+**No painel do seu Web Service, vá para "Environment" e configure:**
 
+#### Configurações Obrigatórias:
 ```env
-# Banco de dados (se necessário)
-DATABASE_CONNECTION_URI=sua_string_de_conexao
+# BANCO DE DADOS (use a connection string do banco que você criou)
+DATABASE_PROVIDER=postgresql
+DATABASE_CONNECTION_URI=postgresql://evolution:[SUA_SENHA]@[HOST]:5432/evolution_db?schema=evolution_api
+DATABASE_CONNECTION_CLIENT_NAME=evolution_exchange
 
-# Outras configurações específicas
+# CONFIGURAÇÕES BÁSICAS
 SERVER_NAME=evolution
 CORS_ORIGIN=*
-# etc...
+
+# CACHE (usar cache local para simplicidade)
+CACHE_REDIS_ENABLED=false
+CACHE_LOCAL_ENABLED=true
+
+# AUTENTICAÇÃO
+AUTHENTICATION_API_KEY=429683C4C977415CAAFCCE10F7D57E11
+AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES=true
+
+# DESABILITAR INTEGRAÇÕES DESNECESSÁRIAS
+RABBITMQ_ENABLED=false
+WEBSOCKET_ENABLED=false
+PUSHER_ENABLED=false
+KAFKA_ENABLED=false
+SQS_ENABLED=false
+NATS_ENABLED=false
+TYPEBOT_ENABLED=false
+CHATWOOT_ENABLED=false
+OPENAI_ENABLED=false
+DIFY_ENABLED=false
+N8N_ENABLED=false
+EVOAI_ENABLED=false
+FLOWISE_ENABLED=false
+
+# LOGS (reduzir para produção)
+LOG_LEVEL=ERROR,WARN,INFO
+LOG_COLOR=false
+TELEMETRY_ENABLED=false
 ```
 
-## ✅ Verificação
+#### Configurações Adicionais (Opcional):
+```env
+# IDIOMA
+LANGUAGE=pt
 
-Após o deploy, teste se está funcionando:
-1. Acesse a URL fornecida pelo Render
-2. Verifique se a API responde corretamente
-3. Confirme que não há erros de porta
+# CONFIGURAÇÕES DE WHATSAPP
+CONFIG_SESSION_PHONE_CLIENT=Evolution API
+CONFIG_SESSION_PHONE_NAME=Chrome
+QRCODE_LIMIT=30
+
+# CONFIGURAÇÕES DE SALVAMENTO
+DATABASE_SAVE_DATA_INSTANCE=true
+DATABASE_SAVE_DATA_NEW_MESSAGE=true
+DATABASE_SAVE_MESSAGE_UPDATE=true
+DATABASE_SAVE_DATA_CONTACTS=true
+DATABASE_SAVE_DATA_CHATS=true
+DATABASE_SAVE_DATA_LABELS=true
+DATABASE_SAVE_DATA_HISTORIC=true
+DATABASE_SAVE_IS_ON_WHATSAPP=true
+DATABASE_SAVE_IS_ON_WHATSAPP_DAYS=7
+DATABASE_DELETE_MESSAGE=true
+
+# CONFIGURAÇÕES GERAIS
+DEL_INSTANCE=false
+EVENT_EMITTER_MAX_LISTENERS=50
+```
+
+### Passo 4: Deploy e Verificação
+
+1. **Deploy**: Clique em "Create" e aguarde o deploy completar
+2. **Teste**: Acesse a URL fornecida pelo Render (ex: `https://evolution-api.onrender.com`)
+3. **Verifique**: Teste se a API responde em `/health` ou `/status`
+
+## 🚨 Solução para Erro "Database provider invalid"
+
+Se você receber o erro `Database provider invalid`, certifique-se de:
+
+1. ✅ **Configurar `DATABASE_PROVIDER=postgresql`** (exatamente assim, minúsculas)
+2. ✅ **Fornecer `DATABASE_CONNECTION_URI`** válida
+3. ✅ **Criar o banco PostgreSQL primeiro** no Render
+4. ✅ **Aguardar o banco estar ativo** antes de fazer deploy do Web Service
+
+## 📁 Arquivos de Referência
+
+- **`.env.render`**: Arquivo com todas as configurações comentadas
+- **`src/config/env.config.ts`**: Código modificado para porta dinâmica
 
 ## 📞 Suporte
 
 Se encontrar problemas:
-1. Verifique os logs no painel do Render
-2. Confirme se todas as variáveis de ambiente estão definidas
-3. Teste localmente primeiro com `npm start`
+
+1. **Erro "Database provider invalid"**:
+   - Verifique se `DATABASE_PROVIDER=postgresql` está definido
+   - Confirme se o banco PostgreSQL está ativo
+   - Valide a `DATABASE_CONNECTION_URI`
+
+2. **Erro de porta**:
+   - O código já está configurado para usar `PORT` automaticamente
+   - Não defina `SERVER_PORT` manualmente no Render
+
+3. **Verificar logs**:
+   - No painel do Render, vá em "Logs" para ver erros
+   - Confirme se todas as variáveis de ambiente estão definidas
 
 ---
 **Modificado em**: 16/12/2025
-**Status**: Pronto para deploy no Render.com
+**Status**: Pronto para deploy no Render.com com solução para erro de banco
